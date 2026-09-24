@@ -102,11 +102,12 @@
             padding: 10px 15px;
             border-radius: 8px;
         }
+        /* 調整 1：將遊戲中的語音偵測詞句顯示框高度增加 */
         .subtitle-box {
             background: #2a2a2a;
             border-radius: 12px;
             padding: 20px;
-            min-height: 120px;
+            min-height: 160px; 
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -283,12 +284,13 @@
     <div id="gameOverModal">
         <div class="game-over-content">
             <div id="alertBanner" class="alert-banner">💥 有人講出禁詞了！</div>
-            <div class="subtitle-box" style="margin-bottom: 15px; min-height: 90px;">
+            <div class="subtitle-box" style="margin-bottom: 15px; min-height: 90px; padding: 12px;">
                 <div class="final-text" id="modalFinalText" style="margin-top:0;"></div>
             </div>
             <div class="action-buttons">
-                <button class="secondary-btn" onclick="returnToSetup()">結束遊戲</button>
-                <button id="restartGameBtn" onclick="resetGame()" style="display:none;">重來</button>
+                <!-- 調整 2：動態調整按鈕文字與功能 (回到遊戲 / 結束遊戲 / 重來) -->
+                <button class="secondary-btn" id="modalLeftBtn" onclick="returnToSetup()">結束遊戲</button>
+                <button id="modalRightBtn" onclick="resetGame()">重來</button>
             </div>
         </div>
     </div>
@@ -299,7 +301,7 @@
             <h1>禁詞 Taboo</h1>
             <p style="color: #aaa; font-size: 14px; margin-bottom: 20px;">輸入不能說的「禁詞」</p>
             
-            <input type="text" id="wordInput" placeholder="輸入禁詞之後，按新增 (例如: 睡覺)">
+            <input type="text" id="wordInput" placeholder="輸入禁詞之後，按新增 (例如: 謝謝)">
             <button onclick="addForbiddenWord()">新增禁詞</button>
 
             <div class="tag-list" id="tagList" style="margin-top: 20px;"></div>
@@ -515,12 +517,45 @@
             }
 
             if (triggeredWord) {
-                triggerGameOver(`💥 有人講出禁詞「${triggeredWord}」了！`, text, triggeredWord);
+                triggerGameOver(`💥 發現禁詞「${triggeredWord}」`, text, triggeredWord);
             }
         }
 
+        // 調整 2：點擊「結束遊戲」時，暫停遊戲並跳出帶有「回到遊戲」與「結束遊戲」的彈窗
         function manualEndGame() {
-            triggerGameOver(`⏹️ 結束遊戲`, document.getElementById('finalText').innerText, null);
+            isGameOver = true;
+            clearInterval(timerInterval);
+            if (recognition) {
+                recognition.stop();
+            }
+
+            const alertBanner = document.getElementById('alertBanner');
+            alertBanner.innerText = "⏹️ 結束遊戲";
+
+            const textContent = document.getElementById('finalText').innerText;
+            document.getElementById('modalFinalText').innerText = textContent ? textContent : '（尚未偵測到語音）';
+
+            // 設定按鈕：左邊是「回到遊戲」，右邊是「結束遊戲」
+            const leftBtn = document.getElementById('modalLeftBtn');
+            const rightBtn = document.getElementById('modalRightBtn');
+
+            leftBtn.innerText = "回到遊戲";
+            leftBtn.className = ""; // 恢復主色調按鈕樣式
+            leftBtn.onclick = resumeGame; // 點擊返回遊戲
+
+            rightBtn.innerText = "結束遊戲";
+            rightBtn.className = "secondary-btn"; // 改為次要按鈕樣式
+            rightBtn.onclick = returnToSetup; // 點擊返回首頁
+
+            document.getElementById('gameOverModal').style.display = 'flex';
+        }
+
+        // 玩家點選「回到遊戲」後的恢復邏輯
+        function resumeGame() {
+            document.getElementById('gameOverModal').style.display = 'none';
+            isGameOver = false;
+            startTimer();
+            initSpeechRecognition();
         }
 
         function returnToSetup() {
@@ -551,14 +586,21 @@
             const alertBanner = document.getElementById('alertBanner');
             alertBanner.innerText = bannerText;
 
-            const restartBtn = document.getElementById('restartGameBtn');
+            // 觸發禁詞時的按鈕設定：「結束遊戲」與「重來」
+            const leftBtn = document.getElementById('modalLeftBtn');
+            const rightBtn = document.getElementById('modalRightBtn');
+
+            leftBtn.innerText = "結束遊戲";
+            leftBtn.className = "secondary-btn";
+            leftBtn.onclick = returnToSetup;
+
+            rightBtn.innerText = "重來";
+            rightBtn.className = "";
+            rightBtn.onclick = resetGame;
             
             if (triggeredWord) {
                 playAlarmSound();
                 document.body.classList.add('flash');
-                restartBtn.style.display = 'block'; // 有禁詞才顯示「重來」
-            } else {
-                restartBtn.style.display = 'none'; // 手動結束不顯示重來相同禁詞按鈕
             }
 
             if (textContent) {
@@ -572,7 +614,6 @@
                 document.getElementById('modalFinalText').innerText = '（尚未偵測到語音）';
             }
 
-            // 顯示中央結算彈窗
             document.getElementById('gameOverModal').style.display = 'flex';
         }
 
