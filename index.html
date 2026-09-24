@@ -150,11 +150,10 @@
             border-radius: 4px;
         }
         .alert-banner {
-            font-size: 26px;
+            font-size: 24px;
             font-weight: bold;
-            color: #ff1744;
+            color: #ff5252;
             margin-bottom: 15px;
-            display: none;
         }
         .action-buttons {
             display: flex;
@@ -212,6 +211,32 @@
             line-height: 1.8;
         }
 
+        /* 遊戲結束/違規中央彈窗樣式 */
+        #gameOverModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9998;
+            padding: 20px;
+        }
+        .game-over-content {
+            background: #1e1e1e;
+            padding: 24px;
+            border-radius: 16px;
+            border: 2px solid #ff5252;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.8);
+        }
+
         /* 強制直向警告遮罩 */
         #landscapeWarning {
             position: fixed;
@@ -231,7 +256,6 @@
             text-align: center;
             padding: 20px;
         }
-        /* 當手機處於橫向時顯示警告 */
         @media screen and (orientation: landscape) {
             #landscapeWarning {
                 display: flex;
@@ -255,13 +279,27 @@
         </div>
     </div>
 
+    <!-- 遊戲結束/違規中央彈窗 -->
+    <div id="gameOverModal">
+        <div class="game-over-content">
+            <div id="alertBanner" class="alert-banner">💥 有人講出禁詞了！</div>
+            <div class="subtitle-box" style="margin-bottom: 15px; min-height: 90px;">
+                <div class="final-text" id="modalFinalText" style="margin-top:0;"></div>
+            </div>
+            <div class="action-buttons">
+                <button class="secondary-btn" onclick="returnToSetup()">結束遊戲</button>
+                <button id="restartGameBtn" onclick="resetGame()" style="display:none;">重來</button>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
         <!-- 準備畫面 -->
         <div id="setupScreen" class="screen active">
-            <h1>禁詞 (Forbidden Words)</h1>
+            <h1>禁詞 Taboo</h1>
             <p style="color: #aaa; font-size: 14px; margin-bottom: 20px;">輸入不能說的「禁詞」</p>
             
-            <input type="text" id="wordInput" placeholder="輸入禁詞之後，按新增 (例如: 謝謝)">
+            <input type="text" id="wordInput" placeholder="輸入禁詞之後，按新增 (例如: 睡覺)">
             <button onclick="addForbiddenWord()">新增禁詞</button>
 
             <div class="tag-list" id="tagList" style="margin-top: 20px;"></div>
@@ -271,8 +309,7 @@
 
         <!-- 遊戲進行畫面 -->
         <div id="gameScreen" class="screen">
-            <h1>🔴 語音偵測中</h1>
-            <div id="alertBanner" class="alert-banner">💥 有人講出禁詞了！</div>
+            <h1>🔴 語音辨識ing</h1>
             
             <div class="status-box">
                 <div>⏱️ 時間: <span id="timerDisplay">0分0秒</span></div>
@@ -280,13 +317,12 @@
             </div>
 
             <div class="subtitle-box">
-                <div class="interim-text" id="interimText">（請開始說話，我有在聽...）</div>
+                <div class="interim-text" id="interimText">（請說話，我有在聽...）</div>
                 <div class="final-text" id="finalText"></div>
             </div>
 
             <div class="action-buttons">
                 <button class="secondary-btn" onclick="manualEndGame()">結束遊戲</button>
-                <button id="restartGameBtn" style="display:none;" onclick="resetGame()">相同禁詞，重來一次</button>
             </div>
         </div>
     </div>
@@ -299,13 +335,11 @@
         let timerInterval = null;
         let secondsElapsed = 0;
 
-        // 檢查瀏覽器是否支援語音辨識
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
             alert("您的瀏覽器不支援語音辨識 API，建議在 iPhone 上使用 Safari，或在電腦/Android 上使用 Chrome！");
         }
 
-        // 初始化音效系統 (必須在使用者互動後解鎖)
         function initAudio() {
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -315,7 +349,6 @@
             }
         }
 
-        // 播放警報蜂鳴聲
         function playAlarmSound() {
             try {
                 initAudio();
@@ -377,22 +410,18 @@
         }
 
         function startGame() {
-            initAudio(); // 解鎖音效權限
+            initAudio();
             document.getElementById('setupScreen').classList.remove('active');
             document.getElementById('gameScreen').classList.add('active');
+            document.getElementById('gameOverModal').style.display = 'none';
             
-            // 重置狀態
             isGameOver = false;
             secondsElapsed = 0;
             document.getElementById('timerDisplay').innerText = '0分0秒';
-            document.getElementById('alertBanner').style.display = 'none';
-            document.getElementById('restartGameBtn').style.display = 'none';
             document.getElementById('finalText').innerText = '';
-            document.getElementById('interimText').innerText = '（請開始說話，我有在聽...）';
+            document.getElementById('interimText').innerText = '（請說話，我有在聽...）';
 
-            // 啟動計時器
             startTimer();
-            
             initSpeechRecognition();
         }
 
@@ -407,13 +436,11 @@
             }, 1000);
         }
 
-        // 偷看禁詞彈窗功能（逐行顯示，1秒後自動關閉）
         function peekWords() {
             const modal = document.getElementById('peekModal');
             const listContainer = document.getElementById('modalWordsList');
             const peekBtn = document.getElementById('peekBtn');
             
-            // 逐行組合禁詞
             listContainer.innerHTML = forbiddenWords.join('<br>');
             modal.style.display = 'flex';
             peekBtn.disabled = true;
@@ -492,13 +519,8 @@
             }
         }
 
-        // 結束遊戲按鈕：回到最一開始畫面，並清空禁詞
         function manualEndGame() {
-            triggerGameOver(`⏹️ 遊戲手動結束`, document.getElementById('finalText').innerText, null);
-            // 延遲或直接跳回首頁並清空
-            setTimeout(() => {
-                returnToSetup();
-            }, 500); // 讓玩家稍微看一眼畫面再返回
+            triggerGameOver(`⏹️ 結束遊戲`, document.getElementById('finalText').innerText, null);
         }
 
         function returnToSetup() {
@@ -508,16 +530,13 @@
                 recognition.stop();
             }
 
-            // 清空禁詞陣列與畫面標籤
             forbiddenWords = [];
             renderTags();
             toggleStartButton();
 
-            // 移除閃爍特效與警告
             document.body.classList.remove('flash');
-            document.getElementById('alertBanner').style.display = 'none';
+            document.getElementById('gameOverModal').style.display = 'none';
 
-            // 切換回準備畫面
             document.getElementById('gameScreen').classList.remove('active');
             document.getElementById('setupScreen').classList.add('active');
         }
@@ -529,27 +548,38 @@
                 recognition.stop();
             }
 
-            // 如果是因為禁詞觸發，才播放警報與閃爍
+            const alertBanner = document.getElementById('alertBanner');
+            alertBanner.innerText = bannerText;
+
+            const restartBtn = document.getElementById('restartGameBtn');
+            
             if (triggeredWord) {
                 playAlarmSound();
                 document.body.classList.add('flash');
-                const alertBanner = document.getElementById('alertBanner');
-                alertBanner.innerText = bannerText;
-                alertBanner.style.display = 'block';
-
-                document.getElementById('restartGameBtn').style.display = 'block';
-
-                if (triggeredWord && textContent) {
-                    const highlightedText = textContent.replace(new RegExp(triggeredWord, 'g'), `<span class="highlight-forbidden">${triggeredWord}</span>`);
-                    document.getElementById('finalText').innerHTML = highlightedText;
-                }
-                document.getElementById('interimText').innerText = '';
+                restartBtn.style.display = 'block'; // 有禁詞才顯示「重來」
+            } else {
+                restartBtn.style.display = 'none'; // 手動結束不顯示重來相同禁詞按鈕
             }
+
+            if (textContent) {
+                if (triggeredWord) {
+                    const highlightedText = textContent.replace(new RegExp(triggeredWord, 'g'), `<span class="highlight-forbidden">${triggeredWord}</span>`);
+                    document.getElementById('modalFinalText').innerHTML = highlightedText;
+                } else {
+                    document.getElementById('modalFinalText').innerText = textContent;
+                }
+            } else {
+                document.getElementById('modalFinalText').innerText = '（尚未偵測到語音）';
+            }
+
+            // 顯示中央結算彈窗
+            document.getElementById('gameOverModal').style.display = 'flex';
         }
 
         function resetGame() {
             document.body.classList.remove('flash');
-            startGame(); // 重新開始新一局
+            document.getElementById('gameOverModal').style.display = 'none';
+            startGame(); // 保留相同禁詞重新開始
         }
     </script>
 </body>
