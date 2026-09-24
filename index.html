@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>禁詞 (Forbidden Words)</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #121212;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            transition: background-color 0.1s ease;
+        }
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: #1e1e1e;
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #ff5252;
+        }
+        .screen {
+            display: none;
+        }
+        .screen.active {
+            display: block;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            background: #2d2d2d;
+            border: 1px solid #444;
+            color: white;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        input[type="text"]:focus {
+            border-color: #ff5252;
+            outline: none;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            font-size: 18px;
+            font-weight: bold;
+            background: #ff5252;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background: #ff1744;
+        }
+        .tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+        .tag {
+            background: #333;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .tag span {
+            cursor: pointer;
+            color: #ff5252;
+            font-weight: bold;
+        }
+        .status-box {
+            font-size: 18px;
+            margin: 20px 0;
+            color: #aaa;
+        }
+        .subtitle-box {
+            background: #2a2a2a;
+            border-radius: 12px;
+            padding: 20px;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+            border: 1px solid #333;
+        }
+        .interim-text {
+            font-size: 18px;
+            color: #888;
+            font-style: italic;
+        }
+        .final-text {
+            font-size: 22px;
+            color: #fff;
+            margin-top: 10px;
+        }
+        /* 閃爍警報特效 */
+        @keyframes flash-screen {
+            0% { background-color: #ff0000; }
+            50% { background-color: #ffffff; }
+            100% { background-color: #ff0000; }
+        }
+        body.flash {
+            animation: flash-screen 0.2s infinite;
+        }
+        /* 禁詞高亮閃爍 */
+        @keyframes blink-word {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.3; transform: scale(1.1); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        .highlight-forbidden {
+            color: #ff1744 !important;
+            font-weight: bold;
+            font-size: 1.3em;
+            display: inline-block;
+            animation: blink-word 0.3s infinite;
+            background: rgba(255, 23, 68, 0.2);
+            padding: 0 4px;
+            border-radius: 4px;
+        }
+        .alert-banner {
+            font-size: 26px;
+            font-weight: bold;
+            color: #ff1744;
+            margin-bottom: 15px;
+            display: none;
+        }
+        .restart-btn {
+            background: #333;
+            display: none;
+            margin-top: 15px;
+        }
+        .restart-btn:hover {
+            background: #444;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- 準備畫面 -->
+        <div id="setupScreen" class="screen active">
+            <h1>禁詞(Forbidden Words)</h1>
+            <p style="color: #aaa; font-size: 14px; margin-bottom: 20px;">輸入大家不能說的「禁詞」</p>
+            
+            <input type="text" id="wordInput" placeholder=" (例如: 好玩)">
+            <button onclick="addForbiddenWord()">新增禁詞</button>
+
+            <div class="tag-list" id="tagList" style="margin-top: 20px;"></div>
+
+            <button id="startBtn" onclick="startGame()" style="margin-top: 20px; background: #4caf50; display: none;">開始遊戲</button>
+        </div>
+
+        <!-- 遊戲進行畫面 -->
+        <div id="gameScreen" class="screen">
+            <h1>🔴 語音偵測中</h1>
+            <div id="alertBanner" class="alert-banner">💥 有人講出禁詞了！</div>
+            
+            <div class="status-box">目前設定的禁詞：<span id="displayWords" style="color:#ff5252; font-weight:bold;"></span></div>
+
+            <div class="subtitle-box">
+                <div class="interim-text" id="interimText">（請開始說話，我有在聽...）</div>
+                <div class="final-text" id="finalText"></div>
+            </div>
+
+            <button id="restartGameBtn" class="restart-btn" onclick="resetGame()">重來一局</button>
+        </div>
+    </div>
+
+    <script>
+        let forbiddenWords = [];
+        let recognition = null;
+        let isGameOver = false;
+        let audioCtx = null;
+
+        // 檢查瀏覽器是否支援語音辨識
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            alert("您的瀏覽器不支援語音辨識 API，建議在 iPhone 上使用 Safari，或在電腦/Android 上使用 Chrome！");
+        }
+
+        // 初始化音效系統 (必須在使用者互動後解鎖)
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // 播放警報蜂鳴聲
+        function playAlarmSound() {
+            try {
+                initAudio();
+                if (!audioCtx) return;
+
+                // 連續發出三聲急促的逼逼聲
+                let now = audioCtx.currentTime;
+                for (let i = 0; i < 3; i++) {
+                    let osc = audioCtx.createOscillator();
+                    let gainNode = audioCtx.createGain();
+
+                    osc.type = 'sawtooth'; // 鋸齒波，聽起來像警報器
+                    osc.frequency.setValueAtTime(880, now + (i * 0.25)); // A5 音高
+
+                    gainNode.gain.setValueAtTime(0.3, now + (i * 0.25));
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + (i * 0.25) + 0.2);
+
+                    osc.connect(gainNode);
+                    gainNode.connect(audioCtx.destination);
+
+                    osc.start(now + (i * 0.25));
+                    osc.stop(now + (i * 0.25) + 0.2);
+                }
+            } catch (e) {
+                console.log("音效播放失敗: ", e);
+            }
+        }
+
+        function addForbiddenWord() {
+            const input = document.getElementById('wordInput');
+            const word = input.value.trim();
+            if (word && !forbiddenWords.includes(word)) {
+                forbiddenWords.push(word);
+                input.value = '';
+                renderTags();
+                toggleStartButton();
+            }
+        }
+
+        function removeWord(index) {
+            forbiddenWords.splice(index, 1);
+            renderTags();
+            toggleStartButton();
+        }
+
+        function renderTags() {
+            const tagList = document.getElementById('tagList');
+            tagList.innerHTML = '';
+            forbiddenWords.forEach((word, index) => {
+                const tag = document.createElement('div');
+                tag.className = 'tag';
+                tag.innerHTML = `${word} <span onclick="removeWord(${index})">&times;</span>`;
+                tagList.appendChild(tag);
+            });
+        }
+
+        function toggleStartButton() {
+            const startBtn = document.getElementById('startBtn');
+            startBtn.style.display = forbiddenWords.length > 0 ? 'block' : 'none';
+        }
+
+        function startGame() {
+            initAudio(); // 解鎖音效權限
+            document.getElementById('setupScreen').classList.remove('active');
+            document.getElementById('gameScreen').classList.add('active');
+            document.getElementById('displayWords').innerText = forbiddenWords.join(', ');
+            
+            initSpeechRecognition();
+        }
+
+        function initSpeechRecognition() {
+            if (!SpeechRecognition) return;
+
+            recognition = new SpeechRecognition();
+            recognition.lang = 'zh-TW'; // 設定繁體中文
+            recognition.interimResults = true; // 開啟即時字幕
+            recognition.continuous = true; // 持續聆聽
+
+            recognition.onresult = function(event) {
+                if (isGameOver) return;
+
+                let interim = '';
+                let final = '';
+
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        final += event.results[i][0].transcript;
+                    } else {
+                        interim += event.results[i][0].transcript;
+                    }
+                }
+
+                // 顯示即時字幕
+                if (interim) {
+                    document.getElementById('interimText').innerText = interim;
+                }
+                if (final) {
+                    document.getElementById('finalText').innerText = final;
+                    document.getElementById('interimText').innerText = '';
+                    
+                    // 檢查是否包含禁詞
+                    checkForbidden(final);
+                }
+            };
+
+            recognition.onerror = function(event) {
+                console.log("語音辨識錯誤: ", event.error);
+            };
+
+            // 如果因為安靜自動斷開，自動幫它重新啟動
+            recognition.onend = function() {
+                if (!isGameOver) {
+                    try {
+                        recognition.start();
+                    } catch (e) {
+                        console.log("重新啟動麥克風");
+                    }
+                }
+            };
+
+            try {
+                recognition.start();
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function checkForbidden(text) {
+            let triggeredWord = null;
+
+            // 檢查抓到的句子裡有沒有包含任何禁詞
+            for (let word of forbiddenWords) {
+                if (text.includes(word)) {
+                    triggeredWord = word;
+                    break;
+                }
+            }
+
+            if (triggeredWord) {
+                isGameOver = true;
+                if (recognition) {
+                    recognition.stop();
+                }
+
+                // 播放警報聲音
+                playAlarmSound();
+
+                // 觸發畫面強烈閃爍
+                document.body.classList.add('flash');
+                document.getElementById('alertBanner').style.display = 'block';
+                document.getElementById('restartGameBtn').style.display = 'block';
+
+                // 將句子中的禁詞進行特別放大與閃爍處理
+                const highlightedText = text.replace(new RegExp(triggeredWord, 'g'), `<span class="highlight-forbidden">${triggeredWord}</span>`);
+                document.getElementById('finalText').innerHTML = highlightedText;
+                document.getElementById('interimText').innerText = '';
+            }
+        }
+
+        function resetGame() {
+            isGameOver = false;
+            document.body.classList.remove('flash');
+            document.getElementById('alertBanner').style.display = 'none';
+            document.getElementById('restartGameBtn').style.display = 'none';
+            document.getElementById('finalText').innerText = '';
+            document.getElementById('interimText').innerText = '（請開始說話，我有在聽...）';
+            
+            if (recognition) {
+                try {
+                    recognition.start();
+                } catch(e) {}
+            }
+        }
+    </script>
+</body>
+</html>
