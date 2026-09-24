@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>禁詞 (Forbidden Words)</title>
+    <title>禁詞 Taboo</title>
     <style>
         * {
             box-sizing: border-box;
@@ -175,15 +175,85 @@
         .peek-btn:hover {
             background: #039be5;
         }
-        #peekWords {
+
+        /* 偷看禁詞彈窗樣式 */
+        #peekModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .modal-content {
+            background: #1e1e1e;
+            padding: 24px;
+            border-radius: 16px;
+            border: 2px solid #0288d1;
+            min-width: 280px;
+            max-width: 90%;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.8);
+        }
+        .modal-title {
+            font-size: 18px;
+            color: #aaa;
+            margin-bottom: 15px;
+        }
+        .modal-words-list {
+            font-size: 24px;
             color: #ff5252;
             font-weight: bold;
+            line-height: 1.8;
+        }
+
+        /* 強制直向警告遮罩 */
+        #landscapeWarning {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #121212;
+            color: #ffffff;
             display: none;
-            margin-left: 8px;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 99999;
+            font-size: 20px;
+            font-weight: bold;
+            text-align: center;
+            padding: 20px;
+        }
+        /* 當手機處於橫向時顯示警告 */
+        @media screen and (orientation: landscape) {
+            #landscapeWarning {
+                display: flex;
+            }
         }
     </style>
 </head>
 <body>
+
+    <!-- 強制直向提示畫面 -->
+    <div id="landscapeWarning">
+        📱 請將手機轉回直向<br>
+        <span style="font-size: 14px; color: #888; margin-top: 10px; font-weight: normal;">遊戲只支援直向畫面</span>
+    </div>
+
+    <!-- 偷看禁詞彈窗 -->
+    <div id="peekModal">
+        <div class="modal-content">
+            <div class="modal-title">👁️ 目前設定的禁詞</div>
+            <div class="modal-words-list" id="modalWordsList"></div>
+        </div>
+    </div>
 
     <div class="container">
         <!-- 準備畫面 -->
@@ -191,7 +261,7 @@
             <h1>禁詞 (Forbidden Words)</h1>
             <p style="color: #aaa; font-size: 14px; margin-bottom: 20px;">輸入不能說的「禁詞」</p>
             
-            <input type="text" id="wordInput" placeholder="輸入禁詞之後，按新增 (例如: 好玩)">
+            <input type="text" id="wordInput" placeholder="輸入禁詞之後，按新增 (例如: 謝謝)">
             <button onclick="addForbiddenWord()">新增禁詞</button>
 
             <div class="tag-list" id="tagList" style="margin-top: 20px;"></div>
@@ -206,10 +276,7 @@
             
             <div class="status-box">
                 <div>⏱️ 時間: <span id="timerDisplay">0分0秒</span></div>
-                <div>
-                    <button class="peek-btn" id="peekBtn" onclick="peekWords()">👁️ 偷看禁詞</button>
-                    <span id="peekWords"></span>
-                </div>
+                <button class="peek-btn" id="peekBtn" onclick="peekWords()">👁️ 偷看禁詞</button>
             </div>
 
             <div class="subtitle-box">
@@ -219,7 +286,7 @@
 
             <div class="action-buttons">
                 <button class="secondary-btn" onclick="manualEndGame()">結束遊戲</button>
-                <button id="restartGameBtn" style="display:none;" onclick="resetGame()">重來一局</button>
+                <button id="restartGameBtn" style="display:none;" onclick="resetGame()">相同禁詞，重來一次</button>
             </div>
         </div>
     </div>
@@ -340,17 +407,19 @@
             }, 1000);
         }
 
-        // 偷看禁詞功能（顯示 1 秒後消失）
+        // 偷看禁詞彈窗功能（逐行顯示，1秒後自動關閉）
         function peekWords() {
-            const peekSpan = document.getElementById('peekWords');
+            const modal = document.getElementById('peekModal');
+            const listContainer = document.getElementById('modalWordsList');
             const peekBtn = document.getElementById('peekBtn');
             
-            peekSpan.innerText = forbiddenWords.join(', ');
-            peekSpan.style.display = 'inline';
+            // 逐行組合禁詞
+            listContainer.innerHTML = forbiddenWords.join('<br>');
+            modal.style.display = 'flex';
             peekBtn.disabled = true;
 
             setTimeout(() => {
-                peekSpan.style.display = 'none';
+                modal.style.display = 'none';
                 peekBtn.disabled = false;
             }, 1000);
         }
@@ -423,9 +492,34 @@
             }
         }
 
-        // 手動結束遊戲
+        // 結束遊戲按鈕：回到最一開始畫面，並清空禁詞
         function manualEndGame() {
             triggerGameOver(`⏹️ 遊戲手動結束`, document.getElementById('finalText').innerText, null);
+            // 延遲或直接跳回首頁並清空
+            setTimeout(() => {
+                returnToSetup();
+            }, 500); // 讓玩家稍微看一眼畫面再返回
+        }
+
+        function returnToSetup() {
+            isGameOver = true;
+            clearInterval(timerInterval);
+            if (recognition) {
+                recognition.stop();
+            }
+
+            // 清空禁詞陣列與畫面標籤
+            forbiddenWords = [];
+            renderTags();
+            toggleStartButton();
+
+            // 移除閃爍特效與警告
+            document.body.classList.remove('flash');
+            document.getElementById('alertBanner').style.display = 'none';
+
+            // 切換回準備畫面
+            document.getElementById('gameScreen').classList.remove('active');
+            document.getElementById('setupScreen').classList.add('active');
         }
 
         function triggerGameOver(bannerText, textContent, triggeredWord) {
@@ -439,24 +533,23 @@
             if (triggeredWord) {
                 playAlarmSound();
                 document.body.classList.add('flash');
+                const alertBanner = document.getElementById('alertBanner');
+                alertBanner.innerText = bannerText;
+                alertBanner.style.display = 'block';
+
+                document.getElementById('restartGameBtn').style.display = 'block';
+
+                if (triggeredWord && textContent) {
+                    const highlightedText = textContent.replace(new RegExp(triggeredWord, 'g'), `<span class="highlight-forbidden">${triggeredWord}</span>`);
+                    document.getElementById('finalText').innerHTML = highlightedText;
+                }
+                document.getElementById('interimText').innerText = '';
             }
-
-            const alertBanner = document.getElementById('alertBanner');
-            alertBanner.innerText = bannerText;
-            alertBanner.style.display = 'block';
-
-            document.getElementById('restartGameBtn').style.display = 'block';
-
-            if (triggeredWord && textContent) {
-                const highlightedText = textContent.replace(new RegExp(triggeredWord, 'g'), `<span class="highlight-forbidden">${triggeredWord}</span>`);
-                document.getElementById('finalText').innerHTML = highlightedText;
-            }
-            document.getElementById('interimText').innerText = '';
         }
 
         function resetGame() {
             document.body.classList.remove('flash');
-            startGame(); // 直接重新開始新一局並重置計時
+            startGame(); // 重新開始新一局
         }
     </script>
 </body>
