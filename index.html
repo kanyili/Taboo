@@ -93,8 +93,14 @@
         }
         .status-box {
             font-size: 18px;
-            margin: 20px 0;
+            margin: 15px 0;
             color: #aaa;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #252525;
+            padding: 10px 15px;
+            border-radius: 8px;
         }
         .subtitle-box {
             background: #2a2a2a;
@@ -150,13 +156,30 @@
             margin-bottom: 15px;
             display: none;
         }
-        .restart-btn {
-            background: #333;
-            display: none;
-            margin-top: 15px;
+        .action-buttons {
+            display: flex;
+            gap: 10px;
         }
-        .restart-btn:hover {
+        .secondary-btn {
+            background: #333;
+        }
+        .secondary-btn:hover {
             background: #444;
+        }
+        .peek-btn {
+            background: #0288d1;
+            padding: 6px 12px;
+            font-size: 14px;
+            width: auto;
+        }
+        .peek-btn:hover {
+            background: #039be5;
+        }
+        #peekWords {
+            color: #ff5252;
+            font-weight: bold;
+            display: none;
+            margin-left: 8px;
         }
     </style>
 </head>
@@ -165,10 +188,10 @@
     <div class="container">
         <!-- 準備畫面 -->
         <div id="setupScreen" class="screen active">
-            <h1>禁詞(Forbidden Words)</h1>
-            <p style="color: #aaa; font-size: 14px; margin-bottom: 20px;">輸入大家不能說的「禁詞」</p>
+            <h1>禁詞 (Forbidden Words)</h1>
+            <p style="color: #aaa; font-size: 14px; margin-bottom: 20px;">輸入不能說的「禁詞」</p>
             
-            <input type="text" id="wordInput" placeholder=" (例如: 好玩)">
+            <input type="text" id="wordInput" placeholder="輸入禁詞之後，按新增 (例如: 好玩)">
             <button onclick="addForbiddenWord()">新增禁詞</button>
 
             <div class="tag-list" id="tagList" style="margin-top: 20px;"></div>
@@ -181,14 +204,23 @@
             <h1>🔴 語音偵測中</h1>
             <div id="alertBanner" class="alert-banner">💥 有人講出禁詞了！</div>
             
-            <div class="status-box">目前設定的禁詞：<span id="displayWords" style="color:#ff5252; font-weight:bold;"></span></div>
+            <div class="status-box">
+                <div>⏱️ 時間: <span id="timerDisplay">0分0秒</span></div>
+                <div>
+                    <button class="peek-btn" id="peekBtn" onclick="peekWords()">👁️ 偷看禁詞</button>
+                    <span id="peekWords"></span>
+                </div>
+            </div>
 
             <div class="subtitle-box">
                 <div class="interim-text" id="interimText">（請開始說話，我有在聽...）</div>
                 <div class="final-text" id="finalText"></div>
             </div>
 
-            <button id="restartGameBtn" class="restart-btn" onclick="resetGame()">重來一局</button>
+            <div class="action-buttons">
+                <button class="secondary-btn" onclick="manualEndGame()">結束遊戲</button>
+                <button id="restartGameBtn" style="display:none;" onclick="resetGame()">重來一局</button>
+            </div>
         </div>
     </div>
 
@@ -197,6 +229,8 @@
         let recognition = null;
         let isGameOver = false;
         let audioCtx = null;
+        let timerInterval = null;
+        let secondsElapsed = 0;
 
         // 檢查瀏覽器是否支援語音辨識
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -220,14 +254,13 @@
                 initAudio();
                 if (!audioCtx) return;
 
-                // 連續發出三聲急促的逼逼聲
                 let now = audioCtx.currentTime;
                 for (let i = 0; i < 3; i++) {
                     let osc = audioCtx.createOscillator();
                     let gainNode = audioCtx.createGain();
 
-                    osc.type = 'sawtooth'; // 鋸齒波，聽起來像警報器
-                    osc.frequency.setValueAtTime(880, now + (i * 0.25)); // A5 音高
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(880, now + (i * 0.25));
 
                     gainNode.gain.setValueAtTime(0.3, now + (i * 0.25));
                     gainNode.gain.exponentialRampToValueAtTime(0.01, now + (i * 0.25) + 0.2);
@@ -280,18 +313,55 @@
             initAudio(); // 解鎖音效權限
             document.getElementById('setupScreen').classList.remove('active');
             document.getElementById('gameScreen').classList.add('active');
-            document.getElementById('displayWords').innerText = forbiddenWords.join(', ');
+            
+            // 重置狀態
+            isGameOver = false;
+            secondsElapsed = 0;
+            document.getElementById('timerDisplay').innerText = '0分0秒';
+            document.getElementById('alertBanner').style.display = 'none';
+            document.getElementById('restartGameBtn').style.display = 'none';
+            document.getElementById('finalText').innerText = '';
+            document.getElementById('interimText').innerText = '（請開始說話，我有在聽...）';
+
+            // 啟動計時器
+            startTimer();
             
             initSpeechRecognition();
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (isGameOver) return;
+                secondsElapsed++;
+                const mins = Math.floor(secondsElapsed / 60);
+                const secs = secondsElapsed % 60;
+                document.getElementById('timerDisplay').innerText = `${mins}分${secs}秒`;
+            }, 1000);
+        }
+
+        // 偷看禁詞功能（顯示 1 秒後消失）
+        function peekWords() {
+            const peekSpan = document.getElementById('peekWords');
+            const peekBtn = document.getElementById('peekBtn');
+            
+            peekSpan.innerText = forbiddenWords.join(', ');
+            peekSpan.style.display = 'inline';
+            peekBtn.disabled = true;
+
+            setTimeout(() => {
+                peekSpan.style.display = 'none';
+                peekBtn.disabled = false;
+            }, 1000);
         }
 
         function initSpeechRecognition() {
             if (!SpeechRecognition) return;
 
             recognition = new SpeechRecognition();
-            recognition.lang = 'zh-TW'; // 設定繁體中文
-            recognition.interimResults = true; // 開啟即時字幕
-            recognition.continuous = true; // 持續聆聽
+            recognition.lang = 'zh-TW';
+            recognition.interimResults = true;
+            recognition.continuous = true;
 
             recognition.onresult = function(event) {
                 if (isGameOver) return;
@@ -307,15 +377,12 @@
                     }
                 }
 
-                // 顯示即時字幕
                 if (interim) {
                     document.getElementById('interimText').innerText = interim;
                 }
                 if (final) {
                     document.getElementById('finalText').innerText = final;
                     document.getElementById('interimText').innerText = '';
-                    
-                    // 檢查是否包含禁詞
                     checkForbidden(final);
                 }
             };
@@ -324,7 +391,6 @@
                 console.log("語音辨識錯誤: ", event.error);
             };
 
-            // 如果因為安靜自動斷開，自動幫它重新啟動
             recognition.onend = function() {
                 if (!isGameOver) {
                     try {
@@ -345,7 +411,6 @@
         function checkForbidden(text) {
             let triggeredWord = null;
 
-            // 檢查抓到的句子裡有沒有包含任何禁詞
             for (let word of forbiddenWords) {
                 if (text.includes(word)) {
                     triggeredWord = word;
@@ -354,39 +419,44 @@
             }
 
             if (triggeredWord) {
-                isGameOver = true;
-                if (recognition) {
-                    recognition.stop();
-                }
-
-                // 播放警報聲音
-                playAlarmSound();
-
-                // 觸發畫面強烈閃爍
-                document.body.classList.add('flash');
-                document.getElementById('alertBanner').style.display = 'block';
-                document.getElementById('restartGameBtn').style.display = 'block';
-
-                // 將句子中的禁詞進行特別放大與閃爍處理
-                const highlightedText = text.replace(new RegExp(triggeredWord, 'g'), `<span class="highlight-forbidden">${triggeredWord}</span>`);
-                document.getElementById('finalText').innerHTML = highlightedText;
-                document.getElementById('interimText').innerText = '';
+                triggerGameOver(`💥 有人講出禁詞「${triggeredWord}」了！`, text, triggeredWord);
             }
         }
 
-        function resetGame() {
-            isGameOver = false;
-            document.body.classList.remove('flash');
-            document.getElementById('alertBanner').style.display = 'none';
-            document.getElementById('restartGameBtn').style.display = 'none';
-            document.getElementById('finalText').innerText = '';
-            document.getElementById('interimText').innerText = '（請開始說話，我有在聽...）';
-            
+        // 手動結束遊戲
+        function manualEndGame() {
+            triggerGameOver(`⏹️ 遊戲手動結束`, document.getElementById('finalText').innerText, null);
+        }
+
+        function triggerGameOver(bannerText, textContent, triggeredWord) {
+            isGameOver = true;
+            clearInterval(timerInterval);
             if (recognition) {
-                try {
-                    recognition.start();
-                } catch(e) {}
+                recognition.stop();
             }
+
+            // 如果是因為禁詞觸發，才播放警報與閃爍
+            if (triggeredWord) {
+                playAlarmSound();
+                document.body.classList.add('flash');
+            }
+
+            const alertBanner = document.getElementById('alertBanner');
+            alertBanner.innerText = bannerText;
+            alertBanner.style.display = 'block';
+
+            document.getElementById('restartGameBtn').style.display = 'block';
+
+            if (triggeredWord && textContent) {
+                const highlightedText = textContent.replace(new RegExp(triggeredWord, 'g'), `<span class="highlight-forbidden">${triggeredWord}</span>`);
+                document.getElementById('finalText').innerHTML = highlightedText;
+            }
+            document.getElementById('interimText').innerText = '';
+        }
+
+        function resetGame() {
+            document.body.classList.remove('flash');
+            startGame(); // 直接重新開始新一局並重置計時
         }
     </script>
 </body>
