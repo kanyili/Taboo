@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>禁詞 Taboo</title>
+    <title>禁詞 Taboo - 溫馨手作風</title>
     <style>
         * {
             box-sizing: border-box;
@@ -12,27 +12,31 @@
         body {
             margin: 0;
             padding: 20px;
-            background-color: #121212;
-            color: #ffffff;
+            /* 溫馨深色手作紙板背景 */
+            background-color: #2b2623;
+            color: #f4eee2;
             display: flex;
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            transition: background-color 0.1s ease;
+            transition: background-color 0.2s ease;
         }
         .container {
             width: 100%;
             max-width: 500px;
-            background: #1e1e1e;
-            padding: 24px;
-            border-radius: 16px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            /* 手帳紙板容器 */
+            background: #38312c;
+            padding: 28px;
+            border-radius: 12px;
+            border: 2px dashed #6b5b52;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
             text-align: center;
         }
         h1 {
-            font-size: 24px;
+            font-size: 26px;
             margin-bottom: 20px;
-            color: #ff5252;
+            color: #ff8c42;
+            letter-spacing: 1px;
         }
         .screen {
             display: none;
@@ -42,17 +46,17 @@
         }
         input[type="text"] {
             width: 100%;
-            padding: 12px;
+            padding: 14px;
             font-size: 16px;
-            background: #2d2d2d;
-            border: 1px solid #444;
-            color: white;
+            background: #2b2623;
+            border: 2px solid #5c4d44;
+            color: #f4eee2;
             border-radius: 8px;
             margin-bottom: 16px;
             text-align: center;
         }
         input[type="text"]:focus {
-            border-color: #ff5252;
+            border-color: #ff8c42;
             outline: none;
         }
         button {
@@ -60,52 +64,69 @@
             padding: 14px;
             font-size: 18px;
             font-weight: bold;
-            background: #ff5252;
+            background: #e06d53;
             color: white;
-            border: none;
+            border: 2px solid #f4eee2;
             border-radius: 8px;
             cursor: pointer;
-            transition: background 0.2s;
+            box-shadow: 0 4px 0 #9c432d;
+            transition: all 0.1s;
         }
         button:hover {
-            background: #ff1744;
+            background: #f07b5f;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 0 #9c432d;
+        }
+        button:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #9c432d;
         }
         .tag-list {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 10px;
             margin-bottom: 20px;
             justify-content: center;
         }
         .tag {
-            background: #333;
-            padding: 6px 12px;
-            border-radius: 20px;
+            /* 紙膠帶風格標籤 */
+            background: #e6c594;
+            color: #2b2623;
+            padding: 6px 14px;
+            border-radius: 4px;
             font-size: 14px;
+            font-weight: bold;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
+            box-shadow: 2px 2px 0 rgba(0,0,0,0.2);
+            transform: rotate(-1deg);
+        }
+        .tag:nth-child(even) {
+            transform: rotate(1deg);
+            background: #c3d69b;
         }
         .tag span {
             cursor: pointer;
-            color: #ff5252;
-            font-weight: bold;
+            color: #b83b27;
+            font-size: 16px;
         }
         .status-box {
-            font-size: 18px;
+            font-size: 16px;
             margin: 15px 0;
-            color: #aaa;
+            color: #d4c5b9;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: #252525;
-            padding: 10px 15px;
+            background: #2b2623;
+            border: 2px solid #5c4d44;
+            padding: 12px 16px;
             border-radius: 8px;
         }
-        /* 調整 1：將遊戲中的語音偵測詞句顯示框高度增加 */
+        /* 語音偵測詞句顯示框 (維持您要的高高度) */
         .subtitle-box {
-            background: #2a2a2a;
-            border-radius: 12px;
+            background: #2b2623;
+            border-radius: 8px;
             padding: 20px;
             min-height: 160px; 
             display: flex;
@@ -113,23 +134,23 @@
             justify-content: center;
             align-items: center;
             margin-bottom: 20px;
-            border: 1px solid #333;
+            border: 2px dashed #5c4d44;
         }
         .interim-text {
             font-size: 18px;
-            color: #888;
+            color: #a3968c;
             font-style: italic;
         }
         .final-text {
             font-size: 22px;
-            color: #fff;
+            color: #f4eee2;
             margin-top: 10px;
         }
         /* 閃爍警報特效 */
         @keyframes flash-screen {
-            0% { background-color: #ff0000; }
-            50% { background-color: #ffffff; }
-            100% { background-color: #ff0000; }
+            0% { background-color: #b83b27; }
+            50% { background-color: #2b2623; }
+            100% { background-color: #b83b27; }
         }
         body.flash {
             animation: flash-screen 0.2s infinite;
@@ -137,23 +158,24 @@
         /* 禁詞高亮閃爍 */
         @keyframes blink-word {
             0% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.3; transform: scale(1.1); }
+            50% { opacity: 0.4; transform: scale(1.1); }
             100% { opacity: 1; transform: scale(1); }
         }
         .highlight-forbidden {
-            color: #ff1744 !important;
+            color: #ff8c42 !important;
             font-weight: bold;
             font-size: 1.3em;
             display: inline-block;
             animation: blink-word 0.3s infinite;
-            background: rgba(255, 23, 68, 0.2);
-            padding: 0 4px;
+            background: rgba(255, 140, 66, 0.25);
+            padding: 0 6px;
             border-radius: 4px;
+            border: 1px dotted #ff8c42;
         }
         .alert-banner {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: bold;
-            color: #ff5252;
+            color: #ff8c42;
             margin-bottom: 15px;
         }
         .action-buttons {
@@ -161,29 +183,37 @@
             gap: 10px;
         }
         .secondary-btn {
-            background: #333;
+            background: #5c4d44;
+            box-shadow: 0 4px 0 #38312c;
         }
         .secondary-btn:hover {
-            background: #444;
+            background: #6e5d53;
+            box-shadow: 0 6px 0 #38312c;
+        }
+        .secondary-btn:active {
+            box-shadow: 0 2px 0 #38312c;
         }
         .peek-btn {
-            background: #0288d1;
-            padding: 6px 12px;
+            background: #4682b4;
+            box-shadow: 0 3px 0 #2c5270;
+            padding: 6px 14px;
             font-size: 14px;
             width: auto;
+            border-radius: 6px;
         }
         .peek-btn:hover {
-            background: #039be5;
+            background: #5a9bd4;
+            box-shadow: 0 4px 0 #2c5270;
         }
 
-        /* 偷看禁詞彈窗樣式 */
+        /* 偷看禁詞彈窗 */
         #peekModal {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: rgba(0, 0, 0, 0.85);
+            background: rgba(43, 38, 35, 0.85);
             display: none;
             flex-direction: column;
             justify-content: center;
@@ -191,35 +221,35 @@
             z-index: 9999;
         }
         .modal-content {
-            background: #1e1e1e;
-            padding: 24px;
-            border-radius: 16px;
-            border: 2px solid #0288d1;
+            background: #38312c;
+            border: 2px solid #ff8c42;
+            padding: 28px;
+            border-radius: 12px;
             min-width: 280px;
             max-width: 90%;
             text-align: center;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.8);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
         }
         .modal-title {
-            font-size: 18px;
-            color: #aaa;
+            font-size: 16px;
+            color: #d4c5b9;
             margin-bottom: 15px;
         }
         .modal-words-list {
             font-size: 24px;
-            color: #ff5252;
+            color: #ff8c42;
             font-weight: bold;
             line-height: 1.8;
         }
 
-        /* 遊戲結束/違規中央彈窗樣式 */
+        /* 遊戲結束/違規中央彈窗 */
         #gameOverModal {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: rgba(0, 0, 0, 0.85);
+            background: rgba(43, 38, 35, 0.85);
             display: none;
             flex-direction: column;
             justify-content: center;
@@ -228,14 +258,14 @@
             padding: 20px;
         }
         .game-over-content {
-            background: #1e1e1e;
-            padding: 24px;
-            border-radius: 16px;
-            border: 2px solid #ff5252;
+            background: #38312c;
+            border: 2px solid #e06d53;
+            padding: 28px;
+            border-radius: 12px;
             width: 100%;
             max-width: 400px;
             text-align: center;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.8);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
         }
 
         /* 強制直向警告遮罩 */
@@ -245,8 +275,8 @@
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: #121212;
-            color: #ffffff;
+            background: #2b2623;
+            color: #f4eee2;
             display: none;
             flex-direction: column;
             justify-content: center;
@@ -269,7 +299,7 @@
     <!-- 強制直向提示畫面 -->
     <div id="landscapeWarning">
         📱 請將手機轉回直向<br>
-        <span style="font-size: 14px; color: #888; margin-top: 10px; font-weight: normal;">遊戲只支援直向畫面</span>
+        <span style="font-size: 14px; color: #a3968c; margin-top: 10px; font-weight: normal;">遊戲只支援直向畫面</span>
     </div>
 
     <!-- 偷看禁詞彈窗 -->
@@ -288,7 +318,6 @@
                 <div class="final-text" id="modalFinalText" style="margin-top:0;"></div>
             </div>
             <div class="action-buttons">
-                <!-- 調整 2：動態調整按鈕文字與功能 (回到遊戲 / 結束遊戲 / 重來) -->
                 <button class="secondary-btn" id="modalLeftBtn" onclick="returnToSetup()">結束遊戲</button>
                 <button id="modalRightBtn" onclick="resetGame()">重來</button>
             </div>
@@ -299,14 +328,14 @@
         <!-- 準備畫面 -->
         <div id="setupScreen" class="screen active">
             <h1>禁詞 Taboo</h1>
-            <p style="color: #aaa; font-size: 14px; margin-bottom: 20px;">輸入不能說的「禁詞」</p>
+            <p style="color: #a3968c; font-size: 14px; margin-bottom: 20px;">輸入不能說的「禁詞」</p>
             
             <input type="text" id="wordInput" placeholder="輸入禁詞之後，按新增 (例如: 謝謝)">
             <button onclick="addForbiddenWord()">新增禁詞</button>
 
             <div class="tag-list" id="tagList" style="margin-top: 20px;"></div>
 
-            <button id="startBtn" onclick="startGame()" style="margin-top: 20px; background: #4caf50; display: none;">開始遊戲</button>
+            <button id="startBtn" onclick="startGame()" style="margin-top: 20px; background: #6b9071; border-color: #f4eee2; box-shadow: 0 4px 0 #425c46; display: none;">開始遊戲</button>
         </div>
 
         <!-- 遊戲進行畫面 -->
@@ -521,7 +550,6 @@
             }
         }
 
-        // 調整 2：點擊「結束遊戲」時，暫停遊戲並跳出帶有「回到遊戲」與「結束遊戲」的彈窗
         function manualEndGame() {
             isGameOver = true;
             clearInterval(timerInterval);
@@ -535,22 +563,20 @@
             const textContent = document.getElementById('finalText').innerText;
             document.getElementById('modalFinalText').innerText = textContent ? textContent : '（尚未偵測到語音）';
 
-            // 設定按鈕：左邊是「回到遊戲」，右邊是「結束遊戲」
             const leftBtn = document.getElementById('modalLeftBtn');
             const rightBtn = document.getElementById('modalRightBtn');
 
             leftBtn.innerText = "回到遊戲";
-            leftBtn.className = ""; // 恢復主色調按鈕樣式
-            leftBtn.onclick = resumeGame; // 點擊返回遊戲
+            leftBtn.className = ""; 
+            leftBtn.onclick = resumeGame; 
 
             rightBtn.innerText = "結束遊戲";
-            rightBtn.className = "secondary-btn"; // 改為次要按鈕樣式
-            rightBtn.onclick = returnToSetup; // 點擊返回首頁
+            rightBtn.className = "secondary-btn"; 
+            rightBtn.onclick = returnToSetup; 
 
             document.getElementById('gameOverModal').style.display = 'flex';
         }
 
-        // 玩家點選「回到遊戲」後的恢復邏輯
         function resumeGame() {
             document.getElementById('gameOverModal').style.display = 'none';
             isGameOver = false;
@@ -586,7 +612,6 @@
             const alertBanner = document.getElementById('alertBanner');
             alertBanner.innerText = bannerText;
 
-            // 觸發禁詞時的按鈕設定：「結束遊戲」與「重來」
             const leftBtn = document.getElementById('modalLeftBtn');
             const rightBtn = document.getElementById('modalRightBtn');
 
@@ -620,7 +645,7 @@
         function resetGame() {
             document.body.classList.remove('flash');
             document.getElementById('gameOverModal').style.display = 'none';
-            startGame(); // 保留相同禁詞重新開始
+            startGame(); 
         }
     </script>
 </body>
