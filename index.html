@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>禁詞 Taboo - 溫馨手作風</title>
+    <title>說出關鍵字 Keyword</title>
     <style>
         * {
             box-sizing: border-box;
@@ -167,7 +167,7 @@
         body.flash {
             animation: flash-screen 0.2s infinite;
         }
-        /* 禁詞高亮閃爍 */
+        /* 關鍵字高亮閃爍 */
         @keyframes blink-word {
             0% { opacity: 1; transform: scale(1); }
             50% { opacity: 0.4; transform: scale(1.1); }
@@ -218,7 +218,7 @@
             box-shadow: 0 4px 0 #2c5270;
         }
 
-        /* 偷看禁詞彈窗 */
+        /* 偷看關鍵字彈窗 */
         #peekModal {
             position: fixed;
             top: 0;
@@ -314,10 +314,10 @@
         <span style="font-size: 14px; color: #a3968c; margin-top: 10px; font-weight: normal;">遊戲只支援直向畫面</span>
     </div>
 
-    <!-- 偷看禁詞彈窗 -->
+    <!-- 偷看關鍵字彈窗 -->
     <div id="peekModal">
         <div class="modal-content">
-            <div class="modal-title">👁️ 目前設定的禁詞</div>
+            <div class="modal-title">目前設定的關鍵字</div>
             <div class="modal-words-list" id="modalWordsList"></div>
         </div>
     </div>
@@ -325,7 +325,7 @@
     <!-- 遊戲結束/違規中央彈窗 -->
     <div id="gameOverModal">
         <div class="game-over-content">
-            <div id="alertBanner" class="alert-banner">💥 有人講出禁詞了！</div>
+            <div id="alertBanner" class="alert-banner">有人講出關鍵字了！</div>
             <div class="subtitle-box" style="margin-bottom: 15px; height: 90px; padding: 10px;">
                 <div class="final-text" id="modalFinalText" style="margin-top:0; font-size: 18px;"></div>
             </div>
@@ -339,11 +339,11 @@
     <div class="container">
         <!-- 準備畫面 -->
         <div id="setupScreen" class="screen active">
-            <h1>禁詞 Taboo</h1>
-            <p style="color: #a3968c; font-size: 13px; margin-bottom: 15px;">輸入不能說的「禁詞」</p>
+            <h1>關鍵字 Taboo</h1>
+            <p style="color: #a3968c; font-size: 13px; margin-bottom: 15px;">輸入「關鍵字」</p>
             
             <input type="text" id="wordInput" placeholder="(例如: 謝謝)">
-            <button onclick="addForbiddenWord()">新增禁詞</button>
+            <button onclick="addForbiddenWord()">新增關鍵字</button>
 
             <div class="tag-list" id="tagList" style="margin-top: 15px;"></div>
 
@@ -356,7 +356,7 @@
             
             <div class="status-box">
                 <div>時間: <span id="timerDisplay">0分0秒</span></div>
-                <button class="peek-btn" id="peekBtn" onclick="peekWords()">偷看禁詞</button>
+                <button class="peek-btn" id="peekBtn" onclick="peekWords()">偷看關鍵字</button>
             </div>
 
             <div class="subtitle-box" id="gameSubtitleBox">
@@ -565,7 +565,7 @@
             }
 
             if (triggeredWord) {
-                triggerGameOver(`💥 發現禁詞「${triggeredWord}」`, document.getElementById('finalText').innerText, triggeredWord);
+                triggerGameOver(`💥 發現關鍵字「${triggeredWord}」`, document.getElementById('finalText').innerText, triggeredWord);
             }
         }
 
@@ -577,7 +577,7 @@
             }
 
             const alertBanner = document.getElementById('alertBanner');
-            alertBanner.innerText = "⏹️ 結束遊戲";
+            alertBanner.innerText = "結束遊戲";
 
             const textContent = document.getElementById('finalText').innerText;
             document.getElementById('modalFinalText').innerText = textContent ? textContent : '（尚未偵測到語音）';
