@@ -392,31 +392,47 @@
             }
         }
 
+        // 連續金幣串音效 (持續約3秒，連續播放5次清脆的上揚金幣聲)
         function playAlarmSound() {
             try {
                 initAudio();
                 if (!audioCtx) return;
 
-                let now = audioCtx.currentTime;
-                for (let i = 0; i < 3; i++) {
-                    let osc = audioCtx.createOscillator();
-                    let gainNode = audioCtx.createGain();
+                const totalCoins = 5;       // 播放 5 次金幣聲
+                const interval = 0.55;      // 每次間隔 0.55 秒 (總長度約 2.7 ~ 3 秒)
 
-                    osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(880, now + (i * 0.25));
+                for (let i = 0; i < totalCoins; i++) {
+                    let startTime = audioCtx.currentTime + (i * interval);
 
-                    gainNode.gain.setValueAtTime(0.3, now + (i * 0.25));
-                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + (i * 0.25) + 0.2);
-
-                    osc.connect(gainNode);
-                    gainNode.connect(audioCtx.destination);
-
-                    osc.start(now + (i * 0.25));
-                    osc.stop(now + (i * 0.25) + 0.2);
+                    // 每次金幣聲由兩個極速上揚的頻率組成 (仿經典金幣雙音)
+                    playSingleCoin(startTime, 987.77, 1318.51); // B5 到 E6
                 }
             } catch (e) {
                 console.log("音效播放失敗: ", e);
             }
+        }
+
+        function playSingleCoin(time, freq1, freq2) {
+            let osc = audioCtx.createOscillator();
+            let gainNode = audioCtx.createGain();
+
+            // 使用方波 (square) 呈現街機電子感
+            osc.type = 'square';
+            
+            // 第一段音頻
+            osc.frequency.setValueAtTime(freq1, time);
+            // 迅速滑音跳到第二段高音
+            osc.frequency.setValueAtTime(freq2, time + 0.08);
+
+            // 音量包絡線：製造清脆俐落的漸弱
+            gainNode.gain.setValueAtTime(0.25, time);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, time + 0.35);
+
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            osc.start(time);
+            osc.stop(time + 0.35);
         }
 
         function addForbiddenWord() {
