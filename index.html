@@ -534,6 +534,13 @@
                     }
                 }
 
+                // 1. 優先檢查即時辨識的 interim 文字，實現毫秒級無延遲觸發
+                if (interim) {
+                    document.getElementById('interimText').innerText = interim;
+                    if (checkForbidden(interim, false)) return; // 發現關鍵字就直接終止
+                }
+
+                // 2. 處理正式確認的 final 文字
                 if (final) {
                     accumulatedText += (accumulatedText ? " " : "") + final;
                     document.getElementById('finalText').innerText = accumulatedText;
@@ -543,9 +550,7 @@
                     const box = document.getElementById('gameSubtitleBox');
                     box.scrollTop = box.scrollHeight;
 
-                    checkForbidden(final);
-                } else if (interim) {
-                    document.getElementById('interimText').innerText = interim;
+                    if (checkForbidden(final, true)) return;
                 }
             };
 
@@ -570,7 +575,7 @@
             }
         }
 
-        function checkForbidden(text) {
+        function checkForbidden(text, isFinalResult) {
             let triggeredWord = null;
 
             for (let word of forbiddenWords) {
@@ -581,8 +586,15 @@
             }
 
             if (triggeredWord) {
-                triggerGameOver(`💥 發現關鍵字「${triggeredWord}」`, document.getElementById('finalText').innerText, triggeredWord);
+                // 如果是從 interim 觸發，抓取當前累計的完整文字或 interim 內容顯示在彈窗
+                let displayContext = document.getElementById('finalText').innerText;
+                if (!displayContext) {
+                    displayContext = text;
+                }
+                triggerGameOver(`💥 發現關鍵字「${triggeredWord}」`, displayContext, triggeredWord);
+                return true;
             }
+            return false;
         }
 
         function manualEndGame() {
